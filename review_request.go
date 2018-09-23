@@ -15,6 +15,8 @@ var (
 	userLogin = os.Getenv("USER")
 )
 
+const workerSize = 4
+
 type Repository struct {
 	*github.Repository
 
@@ -31,13 +33,20 @@ func RepositoryListByReviewRequest() ([]Repository, error) {
 	}
 
 	c := make(chan Repository, len(repos))
-	wg := &sync.WaitGroup{}
-	wg.Add(len(repos))
+	queue := make(chan *github.Repository, len(repos))
 
-	for _, repo := range repos {
-		go fetchRepository(ctx, c, wg, client, repo)
+	wg := &sync.WaitGroup{}
+
+	for i := 0; i < workerSize; i++ {
+		wg.Add(1)
+		go fetchRepository(ctx, c, queue, wg, client)
 	}
 
+	for _, repo := range repos {
+		queue <- repo
+	}
+
+	close(queue)
 	wg.Wait()
 	close(c)
 
@@ -60,27 +69,34 @@ func generateClient(ctx context.Context) *github.Client {
 	return github.NewClient(tc)
 }
 
-func fetchRepository(ctx context.Context, c chan Repository, wc *sync.WaitGroup, client *github.Client, repo *github.Repository) {
+func fetchRepository(ctx context.Context, c chan Repository, queue chan *github.Repository, wc *sync.WaitGroup, client *github.Client) {
 	defer wc.Done()
 
-	repository := Repository{Repository: repo}
+	for {
+		repo, ok := <-queue
+		if !ok {
+			return
+		}
 
-	prs, _, err := client.PullRequests.List(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
-	if err != nil {
-		return
-	}
+		repository := Repository{Repository: repo}
 
-	for _, pr := range prs {
-		reviewers, _, err := client.PullRequests.ListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
+		prs, _, err := client.PullRequests.List(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
 		if err != nil {
-			continue
+			return
 		}
-		if p := filterByUser(pr, repo, reviewers); p != nil {
-			repository.PullRequestList = append(repository.PullRequestList, p)
-		}
-	}
 
-	c <- repository
+		for _, pr := range prs {
+			reviewers, _, err := client.PullRequests.ListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
+			if err != nil {
+				continue
+			}
+			if p := filterByUser(pr, repo, reviewers); p != nil {
+				repository.PullRequestList = append(repository.PullRequestList, p)
+			}
+		}
+
+		c <- repository
+	}
 }
 
 func filterByUser(pr *github.PullRequest, repo *github.Repository, r *github.Reviewers) *github.PullRequest {
