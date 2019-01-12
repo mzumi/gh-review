@@ -2,44 +2,78 @@
 
 
 [[projects]]
+  digest = "1:bcb38c8fc9b21bb8682ce2d605a7d4aeb618abc7f827e3ac0b27c0371fdb23fb"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
+  pruneopts = ""
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:73ad2c6ea4dfacaf6fcb3cc1595b93bf2698380d95e10ead5b607abbdf8d0b7d"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d"
-  version = "v15.0.0"
+  pruneopts = ""
+  revision = "a5cb647b1fac8ba77e1cf25af2f9526658ab63e3"
+  version = "v21.0.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:9abc49f39e3e23e262594bb4fb70abf74c0c99e94f99153f43b143805e850719"
   name = "github.com/google/go-querystring"
   packages = ["query"]
+  pruneopts = ""
   revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
 
 [[projects]]
   branch = "master"
+  digest = "1:5a8ac14f14b3266c21a895b9f84147af1727e2057748aa692f0c7978997552b1"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp"]
+  packages = [
+    "context",
+    "context/ctxhttp",
+  ]
+  pruneopts = ""
   revision = "309822c5b9b9f80db67f016069a12628d94fad34"
 
 [[projects]]
   branch = "master"
+  digest = "1:36417e4645d439fcd9cf732f42006b9bfce0d9dc6118d9616819a031a349bb5b"
   name = "golang.org/x/oauth2"
-  packages = [".","internal"]
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = ""
   revision = "a032972e28060ca4f5644acffae3dfc268cc09db"
 
 [[projects]]
+  digest = "1:934fb8966f303ede63aa405e2c8d7f0a427a05ea8df335dfdc1833dd4d40756f"
   name = "google.golang.org/appengine"
-  packages = ["internal","internal/base","internal/datastore","internal/log","internal/remote_api","internal/urlfetch","urlfetch"]
+  packages = [
+    "internal",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
+  pruneopts = ""
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b9a0c2c0669c957c78e766bd722801f264a8cc8a72e3a5c6d9875c07e3351a1b"
+  input-imports = [
+    "github.com/golang/protobuf/proto",
+    "github.com/google/go-github/github",
+    "github.com/google/go-querystring/query",
+    "golang.org/x/net/context",
+    "golang.org/x/net/context/ctxhttp",
+    "golang.org/x/oauth2",
+    "google.golang.org/appengine/urlfetch",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
