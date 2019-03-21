@@ -20,25 +20,19 @@ jobs:
       GOPATH: /home/circleci/go
     docker:
       - image: circleci/golang:1.12
+    working_directory: /home/circleci/go/src/github.com/mzumi/gh-review
     steps:
       - run: echo 'export PATH=${GOPATH}/bin/:${PATH}' >> $BASH_ENV
       - checkout
       - run: go get -v -t -d ./...
       - run: go get github.com/mitchellh/gox
       - run: go get github.com/tcnksm/ghr
-      - run: gox -output "${GOPATH}/pkg/{{.Dir}}_{{.OS}}_{{.Arch}}"  ./ ./...
       - run:
-        command: |
-          cd $GOPATH/pkg/
-          for f in `ls {{.Dir}}_*`; do
-            if [[ $f =~ windows ]]; then
-              ext=".exe"
-            fi
-          mv $f gh-review$ext
-          zip $f.zip gh-review$ext
-          rm gh-review$ext
-          done
-      - run: ghr -u $CIRCLE_PROJECT_USERNAME $CIRCLE_TAG $GOPATH/pkg/
+          name: cross compile
+          command: |
+            gox -os="linux darwin windows" -arch="amd64" -output="dist/gh-review_{{.OS}}_{{.Arch}}"
+            cd dist/ && gzip *
+      - run: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $tag dist/
 
 workflows:
   version: 2
