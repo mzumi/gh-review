@@ -35,6 +35,8 @@ jobs:
             for f in `ls gh-review_*`; do
               if [[ $f =~ windows ]]; then
                 ext=".exe"
+              else
+                ext=""
               fi
             mv $f gh-review$ext
             zip $f.zip gh-review$ext
