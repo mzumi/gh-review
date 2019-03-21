@@ -32,7 +32,7 @@ jobs:
           command: |
             gox -os="linux darwin windows" -arch="amd64" -output="dist/gh-review_{{.OS}}_{{.Arch}}"
             cd dist/ && gzip *
-      - run: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $tag dist/
+      - run: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
 workflows:
   version: 2
