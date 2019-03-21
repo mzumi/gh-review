@@ -27,6 +27,17 @@ jobs:
       - run: go get github.com/mitchellh/gox
       - run: go get github.com/tcnksm/ghr
       - run: gox -output "${GOPATH}/pkg/{{.Dir}}_{{.OS}}_{{.Arch}}"  ./ ./...
+      - run:
+        command: |
+          cd $GOPATH/pkg/
+          for f in `ls {{.Dir}}_*`; do
+            if [[ $f =~ windows ]]; then
+              ext=".exe"
+            fi
+          mv $f gh-review$ext
+          zip $f.zip gh-review$ext
+          rm gh-review$ext
+          done
       - run: ghr -u $CIRCLE_PROJECT_USERNAME $CIRCLE_TAG $GOPATH/pkg/
 
 workflows:
