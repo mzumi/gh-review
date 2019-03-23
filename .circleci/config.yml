@@ -14,7 +14,8 @@ jobs:
       - run: go get github.com/haya14busa/goverage
       - run: golint ./...
       - run: go vet ./...
-      - run: go test -v -race ./...
+      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      - run: bash <(curl -s https://codecov.io/bash)
   deploy:
     environment:
       GOPATH: /home/circleci/go
