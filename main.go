@@ -12,5 +12,5 @@ func main() {
 		os.Exit(1)
 	}
 	view := NewView(repositories)
-	view.show()
+	view.Show()
 }

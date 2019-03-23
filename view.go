@@ -2,7 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 )
+
+var writer io.Writer
+
+func init() {
+	writer = os.Stdout
+}
 
 type View struct {
 	Repositories []Repository
@@ -14,19 +22,23 @@ func NewView(repos []Repository) *View {
 	}
 }
 
-func (v *View) show() {
+func (v *View) Show() {
 	reviewCount := 0
 	for _, repo := range v.Repositories {
 		reviewCount += len(repo.PullRequestList)
 	}
 
-	fmt.Printf("review (%d)\n", reviewCount)
-	fmt.Println("---")
+	fprintf("review (%d)\n", reviewCount)
+	fprintf("---")
 
 	for _, repo := range v.Repositories {
-		fmt.Printf("%s | href=%s\n", repo.GetName(), repo.GetHTMLURL())
+		fprintf("%s | href=%s\n", repo.GetName(), repo.GetHTMLURL())
 		for _, pr := range repo.PullRequestList {
-			fmt.Printf("- #%d | href=%s\n", pr.GetNumber(), pr.GetHTMLURL())
+			fprintf("- #%d | href=%s\n", pr.GetNumber(), pr.GetHTMLURL())
 		}
 	}
+}
+
+func fprintf(format string, a ...interface{}) {
+	fmt.Fprintf(writer, format, a...)
 }
