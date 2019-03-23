@@ -27,31 +27,14 @@ func RepositoryListByReviewRequest() ([]Repository, error) {
 	ctx := context.Background()
 	client := generateClient(ctx)
 
-	repos, _, err := client.Repositories.ListByOrg(ctx, org, nil)
+	repoChan, err := generateRepoChan(ctx, client)
 	if err != nil {
 		return nil, err
 	}
-
-	c := make(chan Repository, len(repos))
-	queue := make(chan *github.Repository, len(repos))
-
-	wg := &sync.WaitGroup{}
-
-	for i := 0; i < workerSize; i++ {
-		wg.Add(1)
-		go fetchRepository(ctx, c, queue, wg, client)
-	}
-
-	for _, repo := range repos {
-		queue <- repo
-	}
-
-	close(queue)
-	wg.Wait()
-	close(c)
+	prChan := generatePullRequestChan(ctx, repoChan, client)
 
 	repository := []Repository{}
-	for r := range c {
+	for r := range prChan {
 		if len(r.PullRequestList) > 0 {
 			repository = append(repository, r)
 		}
@@ -69,34 +52,72 @@ func generateClient(ctx context.Context) *github.Client {
 	return github.NewClient(tc)
 }
 
-func fetchRepository(ctx context.Context, c chan Repository, queue chan *github.Repository, wc *sync.WaitGroup, client *github.Client) {
-	defer wc.Done()
-
-	for {
-		repo, ok := <-queue
-		if !ok {
-			return
-		}
-
-		repository := Repository{Repository: repo}
-
-		prs, _, err := client.PullRequests.List(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
-		if err != nil {
-			return
-		}
-
-		for _, pr := range prs {
-			reviewers, _, err := client.PullRequests.ListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
-			if err != nil {
-				continue
-			}
-			if p := filterByUser(pr, repo, reviewers); p != nil {
-				repository.PullRequestList = append(repository.PullRequestList, p)
-			}
-		}
-
-		c <- repository
+func generateRepoChan(ctx context.Context, client *github.Client) (<-chan *github.Repository, error) {
+	repos, _, err := client.Repositories.ListByOrg(ctx, org, nil)
+	if err != nil {
+		return nil, err
 	}
+
+	queue := make(chan *github.Repository, len(repos))
+
+	go func() {
+		defer close(queue)
+
+		for _, repo := range repos {
+			queue <- repo
+		}
+	}()
+
+	return queue, nil
+}
+
+func generatePullRequestChan(ctx context.Context, repoChan <-chan *github.Repository, client *github.Client) <-chan Repository {
+	c := make(chan Repository, workerSize)
+	wg := &sync.WaitGroup{}
+
+	go func() {
+		defer close(c)
+		for i := 0; i < workerSize; i++ {
+			wg.Add(1)
+			go func() {
+				for {
+					repo, ok := <-repoChan
+					if !ok {
+						wg.Done()
+						return
+					}
+
+					r := fetchRepository(ctx, repo, client)
+					if r != nil {
+						c <- *r
+					}
+				}
+			}()
+		}
+		wg.Wait()
+	}()
+
+	return c
+}
+
+func fetchRepository(ctx context.Context, repo *github.Repository, client *github.Client) *Repository {
+	repository := &Repository{Repository: repo}
+
+	prs, _, err := client.PullRequests.List(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
+	if err != nil {
+		return nil
+	}
+
+	for _, pr := range prs {
+		reviewers, _, err := client.PullRequests.ListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
+		if err != nil {
+			continue
+		}
+		if p := filterByUser(pr, repo, reviewers); p != nil {
+			repository.PullRequestList = append(repository.PullRequestList, p)
+		}
+	}
+	return repository
 }
 
 func filterByUser(pr *github.PullRequest, repo *github.Repository, r *github.Reviewers) *github.PullRequest {
