@@ -53,18 +53,25 @@ func generateClient(ctx context.Context) *github.Client {
 }
 
 func generateRepoChan(ctx context.Context, client *github.Client) (<-chan *github.Repository, error) {
-	repos, _, err := client.Repositories.ListByOrg(ctx, org, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	queue := make(chan *github.Repository, len(repos))
-
+	queue := make(chan *github.Repository, 10)
 	go func() {
 		defer close(queue)
+		opt := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 10}}
 
-		for _, repo := range repos {
-			queue <- repo
+		for {
+			repos, resp, err := client.Repositories.ListByOrg(ctx, org, opt)
+			if err != nil {
+				return
+			}
+
+			for _, repo := range repos {
+				queue <- repo
+			}
+
+			if resp.NextPage == 0 {
+				return
+			}
+			opt.Page = resp.NextPage
 		}
 	}()
 
