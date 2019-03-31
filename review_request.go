@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v24/github"
-	"golang.org/x/oauth2"
 )
 
 var (
@@ -23,10 +22,7 @@ type Repository struct {
 	PullRequestList []*github.PullRequest
 }
 
-func RepositoryListByReviewRequest() ([]Repository, error) {
-	ctx := context.Background()
-	client := generateClient(ctx)
-
+func RepositoryListByReviewRequest(ctx context.Context, client Client) ([]Repository, error) {
 	repoChan, err := generateRepoChan(ctx, client)
 	if err != nil {
 		return nil, err
@@ -43,23 +39,14 @@ func RepositoryListByReviewRequest() ([]Repository, error) {
 	return repository, nil
 }
 
-func generateClient(ctx context.Context) *github.Client {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-
-	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc)
-}
-
-func generateRepoChan(ctx context.Context, client *github.Client) (<-chan *github.Repository, error) {
+func generateRepoChan(ctx context.Context, client Client) (<-chan *github.Repository, error) {
 	queue := make(chan *github.Repository, 10)
 	go func() {
 		defer close(queue)
 		opt := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 10}}
 
 		for {
-			repos, resp, err := client.Repositories.ListByOrg(ctx, org, opt)
+			repos, resp, err := client.RepositoryListByOrg(ctx, org, opt)
 			if err != nil {
 				return
 			}
@@ -78,7 +65,7 @@ func generateRepoChan(ctx context.Context, client *github.Client) (<-chan *githu
 	return queue, nil
 }
 
-func generatePullRequestChan(ctx context.Context, repoChan <-chan *github.Repository, client *github.Client) <-chan Repository {
+func generatePullRequestChan(ctx context.Context, repoChan <-chan *github.Repository, client Client) <-chan Repository {
 	c := make(chan Repository, workerSize)
 	wg := &sync.WaitGroup{}
 
@@ -107,16 +94,16 @@ func generatePullRequestChan(ctx context.Context, repoChan <-chan *github.Reposi
 	return c
 }
 
-func fetchRepository(ctx context.Context, repo *github.Repository, client *github.Client) *Repository {
+func fetchRepository(ctx context.Context, repo *github.Repository, client Client) *Repository {
 	repository := &Repository{Repository: repo}
 
-	prs, _, err := client.PullRequests.List(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
+	prs, _, err := client.PullRequestList(ctx, org, *repo.Name, &github.PullRequestListOptions{State: "open"})
 	if err != nil {
 		return nil
 	}
 
 	for _, pr := range prs {
-		reviewers, _, err := client.PullRequests.ListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
+		reviewers, _, err := client.PullRequestListReviewers(ctx, org, repo.GetName(), pr.GetNumber(), nil)
 		if err != nil {
 			continue
 		}
