@@ -29,7 +29,7 @@ func (v *View) Show() {
 	}
 
 	fprintf("review (%d)\n", reviewCount)
-	fprintf("---")
+	fprintf("---\n")
 
 	for _, repo := range v.Repositories {
 		fprintf("%s | href=%s\n", repo.GetName(), repo.GetHTMLURL())
