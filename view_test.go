@@ -21,7 +21,7 @@ func TestNoReviewee(t *testing.T) {
 	view := NewView(repositories)
 	view.Show()
 
-	if buffer.String() != "review (0)\n---" {
+	if buffer.String() != "review (0)\n---\n" {
 		t.Errorf("Unexpected output: %s", buffer.String())
 	}
 }
@@ -51,7 +51,7 @@ func TestAssignReviewee(t *testing.T) {
 	view := NewView(repositories)
 	view.Show()
 
-	expected := "review (1)\n---gh-review | href=https://github.com/mzumi/gh-review\n- #11 | href=https://github.com/mzumi/gh-review/pull/11\n"
+	expected := "review (1)\n---\ngh-review | href=https://github.com/mzumi/gh-review\n- #11 | href=https://github.com/mzumi/gh-review/pull/11\n"
 
 	if buffer.String() != expected {
 		t.Errorf("Unexpected output: %s", buffer.String())
