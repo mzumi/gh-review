@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/google/go-github/v24/github"
+	"github.com/google/go-github/v25/github"
 )
 
 var buffer *bytes.Buffer
