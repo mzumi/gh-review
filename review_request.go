@@ -107,14 +107,14 @@ func fetchRepository(ctx context.Context, repo *github.Repository, client Client
 		if err != nil {
 			continue
 		}
-		if p := filterByUser(pr, repo, reviewers); p != nil {
+		if p := filterByUser(pr, reviewers); p != nil {
 			repository.PullRequestList = append(repository.PullRequestList, p)
 		}
 	}
 	return repository
 }
 
-func filterByUser(pr *github.PullRequest, repo *github.Repository, r *github.Reviewers) *github.PullRequest {
+func filterByUser(pr *github.PullRequest, r *github.Reviewers) *github.PullRequest {
 	for _, user := range r.Users {
 		if *user.Login == userLogin {
 			return pr
